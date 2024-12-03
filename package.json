@@ -1,0 +1,16 @@
+{
+  "name": "cs361-mealplan-microservice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "client": "node ./clientTest/tester.mjs",
+    "server": "node ./server/mealPlanMicroservice.mjs"
+  },
+  "author": "Travis Kuenzi",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "mongoose": "^8.8.3"
+  }
+}
