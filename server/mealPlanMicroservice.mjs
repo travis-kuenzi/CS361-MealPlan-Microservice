@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import moment from 'moment';
 import { default as MealPlan } from "./mealPlanModel.mjs";
 import { default as credentials } from "./dbCredentials.mjs";
 
@@ -14,15 +15,25 @@ const app = express();
 app.use(express.json());
 
 
+function weekOf(date = new Date()) {
+    // Calculate the Monday of the given week
+    return moment(date).startOf('isoWeek').format('YYYY-MM-DD');
+}
+
+
 // eventually I would like to scale up to allow for multiple recipes in one meal... side dishes, dessert, etc!
 app.post("/updateMealPlan", async(req, res) => {
     const { data } = req.body;
 
+    const date = data.date ? new Date(data.date) : new Date();
+    const currentWeekOf = weekOf(date);
+    
     // right now we just replace any existing entry, in the future we should verify with user!
     const existingMealPlan = await MealPlan.findOneAndUpdate(
-        { weekOf: data.weekOf, userID: data.userID },
-        { $set: { [data.day]: data.recipe }} // dynamically set the day field
+        { weekOf: currentWeekOf, userID: data.userID },
+        { $set: { [`days.${data.day}`]: data.recipe }} // dynamically set the day field inside the 'days' object
     );
+    
 
     if (existingMealPlan) {
         return res.json({
@@ -32,9 +43,9 @@ app.post("/updateMealPlan", async(req, res) => {
     }
     else {
         const newMealPlan = new MealPlan({ 
-            weekOf: data.weekOf,
+            weekOf: currentWeekOf,
             userID: data.userID,
-            [data.day]: data.recipe
+            [`days.${data.day}`]: data.recipe
         });
         await newMealPlan.save();
         return res.json({
@@ -44,29 +55,37 @@ app.post("/updateMealPlan", async(req, res) => {
     }
 });
 
-app.get("/getMealPlan/:weekOf/:userID", async(req, res) => {
-    const { weekOf, userID } = req.params;
+app.get("/getMealPlan/:userID/:date", async(req, res) => {
+    const { userID } = req.params;
 
-    const mealPlan = await MealPlan.findOne({ weekOf, userID });
-
-    if (mealPlan) {
-        return res.json({
-            sunday: mealPlan.sunday,
-            tuesday: mealPlan.tuesday,
-            wednesday: mealPlan.wednesday,
-            thursday: mealPlan.thursday,
-            friday: mealPlan.friday,
-            saturday: mealPlan.saturday,
-            exists: true,
-            message: "Found Meal Plan."
-        })
-    } else {
-        return res.json({
-            exists: false,
-            message: "Meal Plan does not exist.!"
-        })
+    // Validate userID
+    if (!mongoose.Types.ObjectId.isValid(userID)) {
+        return res.status(400).json({ error: "Invalid userID format" });
     }
-})
+
+    // Use query parameter `date` if provided, otherwise default to today
+    const date = req.params.date ? new Date(req.params.date) : new Date();
+    date.setHours(0, 0, 0, 0); // sets the time to midnight
+    const currentWeekOf = weekOf(date);
+
+    console.log(`Trying to find meal plan with userID: ${userID}, weekOf: ${currentWeekOf}\n`);
+
+    try {
+        const mealPlan = await MealPlan.findOne({ weekOf: currentWeekOf, userID: userID });
+
+        if (mealPlan) {
+            return res.json(mealPlan);
+        } else {
+            return res.status(404).json({
+                exists: false,
+                message: "Meal Plan does not exist.!"
+            })
+        }
+    } catch {
+        console.error("Error fetching meal plan:");
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
 
 
 // Start the HTTP server

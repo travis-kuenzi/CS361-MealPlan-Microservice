@@ -5,17 +5,10 @@ app.use(express.json());
 
 const mealData = {
     data: {
-        weekOf: "2024-02-12T14:18:15.123Z",
+        date: "2024-02-12",
         userID: '674e155690558860cca17ecd',
-        day: "thursday",
+        day: "tuesday",
         recipe: "FakeSpoonacularRecipeIDNumber2"
-    }
-};
-
-const mealPlanData = {
-    data: {
-        weekOf: "2024-02-12T14:18:15.123Z",
-        userID: '674e155690558860cca17ecd'
     }
 };
 
@@ -44,11 +37,18 @@ async function createMeal(mealData) {
     }
 }
 
+const mealPlanData = {
+    data: {
+        date: "2024-02-12",
+        userID: '674e155690558860cca17ecd'
+    }
+};
+
 async function getMealPlan (mealPlanData) {
-    const weekOf = mealPlanData.data.weekOf;
+    const date = mealPlanData.data.date;
     const userID = mealPlanData.data.userID;
     
-    const url = `http://localhost:3002/getMealPlan/${weekOf}/${userID}`;
+    const url = `http://localhost:3002/getMealPlan/${userID}/${date}`;
     const options = {
         method: 'GET',
         headers: {

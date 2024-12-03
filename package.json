@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "client": "node ./clientTest/tester.mjs",
-    "server": "node ./server/mealPlanMicroservice.mjs"
+    "server": "nodemon ./server/mealPlanMicroservice.mjs"
   },
   "author": "Travis Kuenzi",
   "license": "ISC",
   "dependencies": {
     "express": "^4.21.1",
+    "moment": "^2.30.1",
     "mongoose": "^8.8.3"
   }
 }
