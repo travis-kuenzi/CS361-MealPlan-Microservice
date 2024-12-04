@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "client": "node ./clientTest/tester.mjs",
-    "server": "nodemon ./server/mealPlanMicroservice.mjs"
+    "server": "node ./server/mealPlanMicroservice.mjs"
   },
   "author": "Travis Kuenzi",
   "license": "ISC",

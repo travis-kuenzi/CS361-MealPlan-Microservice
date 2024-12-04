@@ -42,54 +42,69 @@ app.post("/updateMealPlan", async(req, res) => {
         });
     }
     else {
-        const newMealPlan = new MealPlan({ 
-            weekOf: currentWeekOf,
-            userID: data.userID,
-            [`days.${data.day}`]: data.recipe
-        });
-        await newMealPlan.save();
-        return res.json({
-            recipe: data.recipe,
-            message: `Added meal for ${data.day}`,
+        return res.status(404).json({
+            message: "Couldn't find meal plan!"
         });
     }
 });
 
 app.get("/getMealPlan/:userID/:date", async(req, res) => {
-    const { userID } = req.params;
+    console.log("Running getMealPlan route\n");    // DEBUGGING
+    console.log(`Microservice recieved: ${req.params.userID}, ${req.params.date}\n`)    // DEBUGGING
+    
+    const { userID, date } = req.params;
 
     // Validate userID
     if (!mongoose.Types.ObjectId.isValid(userID)) {
         return res.status(400).json({ error: "Invalid userID format" });
     }
 
-    // Use query parameter `date` if provided, otherwise default to today
-    const date = req.params.date ? new Date(req.params.date) : new Date();
-    date.setHours(0, 0, 0, 0); // sets the time to midnight
-    const currentWeekOf = weekOf(date);
+    const dateObj = new Date(date);
+    dateObj.setHours(0, 0, 0, 0); // sets the time to midnight
+    console.log(`Created new date object: ${ dateObj }`);    // DEBUGGING
 
-    console.log(`Trying to find meal plan with userID: ${userID}, weekOf: ${currentWeekOf}\n`);
+    const currentWeekOf = weekOf(date);
+    console.log(`Which is the week of: ${ currentWeekOf }`);    // DEBUGGING
+
+
+    console.log(`Trying to find meal plan with userID: ${userID}, and weekOf: ${currentWeekOf}\n`);
 
     try {
         const mealPlan = await MealPlan.findOne({ weekOf: currentWeekOf, userID: userID });
 
         if (mealPlan) {
-            return res.json(mealPlan);
+            return res.json({
+                mealPlan: mealPlan,
+                message: "Successfully found meal plan!",
+                existed: true
+            });
         } else {
-            return res.status(404).json({
-                exists: false,
-                message: "Meal Plan does not exist.!"
+            const newMealPlan = new MealPlan({ 
+                weekOf: currentWeekOf,
+                userID: userID,
+            });
+            await newMealPlan.save();
+            return res.json({
+                mealPlan: newMealPlan,
+                message: "Created new meal plan!",
+                existed: false
             })
         }
     } catch {
         console.error("Error fetching meal plan:");
-        res.status(500).json({ error: "Internal server error" });
+        return res.status(500).json({ error: "Internal server error" });
     }
 });
 
 
 // Start the HTTP server
 const PORT = 3002;
-app.listen(PORT, () => {
-  console.log(`HTTP microservice running on http://localhost:${PORT}`);
+app.listen(PORT, (err) => {
+    if (err) {
+      console.error(`Failed to start server: ${err.message}`);
+      process.exit(1); // Exit the process if the server fails to start
+    } else {
+      console.log(`HTTP microservice running on http://localhost:${PORT}`);
+    }
 });
+  
